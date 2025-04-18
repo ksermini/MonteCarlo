@@ -6,6 +6,8 @@
 #include "OptionPricer.h"
 #include "Logger.h"
 #include "CLI/CLI.hpp"
+#include "CallPayoff.h"
+#include "PutPayoff.h"
 
 int main(int argc, char* argv[]) {
     try {
@@ -72,13 +74,17 @@ int main(int argc, char* argv[]) {
         );
         montecarlo::Logger::info("Pricer created successfully");
 
+        // Create appropriate payoff strategy
+        std::unique_ptr<montecarlo::Payoff> payoff;
+        if (config.option_type == montecarlo::OptionType::Call) {
+            payoff = std::make_unique<montecarlo::CallPayoff>(config.K);
+        } else {
+            payoff = std::make_unique<montecarlo::PutPayoff>(config.K);
+        }
+
         // Price the option
         montecarlo::Logger::info("Calculating option price...");
-        auto result = pricer.price_option(
-            config.option_type,
-            config.K,
-            config.T
-        );
+        auto result = pricer.price_option(*payoff, config.T);
 
         // Output results
         montecarlo::Logger::info("Option Price: " + std::to_string(result.price));

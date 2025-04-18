@@ -1,40 +1,52 @@
 #include "OptionPricer.h"
 #include <cmath>
 #include <random>
-#include <algorithm>
-#include <numeric>
+#include <thread>
+#include <chrono>
 
 namespace montecarlo {
 
-OptionPricer::OptionPricer(const BlackScholesModel& model, 
-                          unsigned int num_simulations, 
+OptionPricer::OptionPricer(const BlackScholesModel& model,
+                          unsigned int num_simulations,
                           unsigned int num_threads)
-    : model_(model)
-    , num_simulations_(num_simulations)
-    , num_threads_(num_threads)
-{
+    : model_(model),
+      num_simulations_(num_simulations),
+      num_threads_(num_threads) {
 }
 
-PricingResult OptionPricer::price_option(OptionType type, double K, double T) {
+PricingResult OptionPricer::price_option(const Payoff& payoff, double T) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // Calculate number of simulations per thread
     unsigned int sims_per_thread = num_simulations_ / num_threads_;
     unsigned int remaining_sims = num_simulations_ % num_threads_;
 
-    // Results storage
-    std::vector<double> thread_results(num_threads_, 0.0);
-    std::vector<double> thread_sum_squares(num_threads_, 0.0);
+    // Initialize results
+    double sum_payoffs = 0.0;
+    double sum_squared_payoffs = 0.0;
+    std::mutex mutex;
+
+    // Create and launch threads
     std::vector<std::thread> threads;
+    unsigned int start_idx = 0;
 
-    // Launch threads
     for (unsigned int i = 0; i < num_threads_; ++i) {
-        unsigned int start = i * sims_per_thread;
-        unsigned int end = start + sims_per_thread + (i == num_threads_ - 1 ? remaining_sims : 0);
+        unsigned int thread_sims = sims_per_thread + (i < remaining_sims ? 1 : 0);
+        unsigned int end_idx = start_idx + thread_sims;
 
-        threads.emplace_back([this, start, end, &thread_results, &thread_sum_squares, type, K, T, i]() {
-            simulate_range(start, end, thread_results[i], thread_sum_squares[i], type, K, T);
+        threads.emplace_back([this, start_idx, end_idx, &sum_payoffs, &sum_squared_payoffs, &mutex, &payoff, T]() {
+            double local_sum = 0.0;
+            double local_sum_squared = 0.0;
+            
+            simulate_range(start_idx, end_idx, local_sum, local_sum_squared, payoff, T);
+
+            // Update global sums with thread safety
+            std::lock_guard<std::mutex> lock(mutex);
+            sum_payoffs += local_sum;
+            sum_squared_payoffs += local_sum_squared;
         });
+
+        start_idx = end_idx;
     }
 
     // Wait for all threads to complete
@@ -42,43 +54,43 @@ PricingResult OptionPricer::price_option(OptionType type, double K, double T) {
         thread.join();
     }
 
-    // Aggregate results
-    double total_payoff = std::accumulate(thread_results.begin(), thread_results.end(), 0.0);
-    double total_sum_squares = std::accumulate(thread_sum_squares.begin(), thread_sum_squares.end(), 0.0);
+    // Calculate final results
+    double mean_payoff = sum_payoffs / num_simulations_;
+    double mean_squared_payoff = sum_squared_payoffs / num_simulations_;
+    double variance = mean_squared_payoff - mean_payoff * mean_payoff;
+    double standard_error = std::sqrt(variance / num_simulations_);
 
-    // Calculate final price and standard error
-    double discount_factor = std::exp(-model_.get_risk_free_rate() * T);
-    double price = (total_payoff / num_simulations_) * discount_factor;
-    
-    double variance = (total_sum_squares / num_simulations_) - std::pow(total_payoff / num_simulations_, 2);
-    double standard_error = std::sqrt(variance / num_simulations_) * discount_factor;
+    // Apply discounting
+    double discounted_price = mean_payoff * std::exp(-model_.get_risk_free_rate() * T);
 
     auto end_time = std::chrono::high_resolution_clock::now();
     auto computation_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
 
-    return PricingResult{price, standard_error, computation_time};
+    return {discounted_price, standard_error, computation_time};
 }
 
-void OptionPricer::simulate_range(unsigned int start, unsigned int end,
-                                double& result, double& sum_squares,
-                                OptionType type, double K, double T) {
+void OptionPricer::simulate_range(unsigned int start_idx,
+                                unsigned int end_idx,
+                                double& sum_payoffs,
+                                double& sum_squared_payoffs,
+                                const Payoff& payoff,
+                                double T) {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::normal_distribution<> dist(0.0, 1.0);
+    std::normal_distribution<double> dist(0.0, 1.0);
 
-    for (unsigned int i = start; i < end; ++i) {
-        double ST = model_.simulate_price(model_.get_initial_price(), K, model_.get_risk_free_rate(), model_.get_volatility(), T);
-        double payoff_value = payoff(ST, type, K);
-        result += payoff_value;
-        sum_squares += payoff_value * payoff_value;
-    }
-}
+    double S0 = model_.get_initial_price();
+    double r = model_.get_risk_free_rate();
+    double sigma = model_.get_volatility();
+    double dt = T;
 
-double OptionPricer::payoff(double ST, OptionType type, double K) {
-    if (type == OptionType::Call) {
-        return std::max(ST - K, 0.0);
-    } else {
-        return std::max(K - ST, 0.0);
+    for (unsigned int i = start_idx; i < end_idx; ++i) {
+        double z = dist(gen);
+        double S_T = S0 * std::exp((r - 0.5 * sigma * sigma) * dt + sigma * std::sqrt(dt) * z);
+        
+        double payoff_value = payoff.calculate(S_T);
+        sum_payoffs += payoff_value;
+        sum_squared_payoffs += payoff_value * payoff_value;
     }
 }
 

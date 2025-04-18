@@ -6,6 +6,8 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <memory>
+#include "Payoff.h"
 
 namespace montecarlo {
 
@@ -26,21 +28,22 @@ public:
     /**
      * @brief Construct a new Option Pricer object
      * 
-     * @param model Reference to the Black-Scholes model
-     * @param num_simulations Number of Monte Carlo simulations to run
-     * @param num_threads Number of threads to use for parallel computation
+     * @param model Reference to the pricing model
+     * @param num_simulations Number of Monte Carlo simulations
+     * @param num_threads Number of threads for parallel computation
      */
-    OptionPricer(const BlackScholesModel& model, unsigned int num_simulations, unsigned int num_threads);
+    OptionPricer(const BlackScholesModel& model, 
+                unsigned int num_simulations,
+                unsigned int num_threads);
 
     /**
-     * @brief Calculate the option price using Monte Carlo simulation
+     * @brief Price an option using Monte Carlo simulation
      * 
-     * @param type Option type (Call/Put)
-     * @param K Strike price
+     * @param payoff The payoff strategy to use
      * @param T Time to maturity
-     * @return PricingResult The calculated option price, standard error, and computation time
+     * @return PricingResult The pricing result including price, standard error, and computation time
      */
-    PricingResult price_option(OptionType type, double K, double T);
+    PricingResult price_option(const Payoff& payoff, double T);
 
 private:
     // Model reference
@@ -51,19 +54,21 @@ private:
     unsigned int num_threads_;
 
     /**
-     * @brief Simulate a range of price paths
+     * @brief Simulate a range of paths and accumulate results
      * 
-     * @param start Starting simulation index
-     * @param end Ending simulation index
-     * @param result Reference to store the sum of payoffs
-     * @param sum_squares Reference to store the sum of squared payoffs
-     * @param type Option type
-     * @param K Strike price
+     * @param start_idx Starting index of the simulation range
+     * @param end_idx Ending index of the simulation range
+     * @param sum_payoffs Reference to accumulate sum of payoffs
+     * @param sum_squared_payoffs Reference to accumulate sum of squared payoffs
+     * @param payoff The payoff strategy to use
      * @param T Time to maturity
      */
-    void simulate_range(unsigned int start, unsigned int end, 
-                       double& result, double& sum_squares,
-                       OptionType type, double K, double T);
+    void simulate_range(unsigned int start_idx,
+                       unsigned int end_idx,
+                       double& sum_payoffs,
+                       double& sum_squared_payoffs,
+                       const Payoff& payoff,
+                       double T);
 
     /**
      * @brief Calculate the payoff for a given terminal price
