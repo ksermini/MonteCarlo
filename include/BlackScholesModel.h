@@ -11,7 +11,12 @@
  */
 class BlackScholesModel : public IPricingModel {
 public:
-    BlackScholesModel() = default;
+    BlackScholesModel(double initial_price, double risk_free_rate, double volatility)
+        : initial_price_(initial_price)
+        , risk_free_rate_(risk_free_rate)
+        , volatility_(volatility)
+    {}
+
     ~BlackScholesModel() override = default;
 
     /**
@@ -26,7 +31,16 @@ public:
      */
     double simulate_price(double S, double K, double r, double sigma, double T) const override;
 
+    // Getters
+    double get_initial_price() const { return initial_price_; }
+    double get_risk_free_rate() const { return risk_free_rate_; }
+    double get_volatility() const { return volatility_; }
+
 private:
+    double initial_price_;
+    double risk_free_rate_;
+    double volatility_;
+
     /**
      * @brief Generates a standard normal random variable
      * 

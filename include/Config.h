@@ -1,7 +1,10 @@
 #pragma once
+
 #include <string>
-#include <nlohmann/json.hpp>
+#include "nlohmann/json.hpp"
 #include "OptionType.h"
+
+namespace montecarlo {
 
 class Config {
 public:
@@ -12,6 +15,14 @@ public:
      * @return Config Loaded configuration object
      */
     static Config load(const std::string& filename);
+
+    /**
+     * @brief Parse option type from string
+     * 
+     * @param type_str String representation of option type ("call" or "put")
+     * @return OptionType Parsed option type
+     */
+    static OptionType parse_option_type(const std::string& type_str);
 
     // Simulation parameters
     unsigned int num_simulations;
@@ -31,5 +42,6 @@ public:
 
 private:
     Config() = default;
-    static OptionType parse_option_type(const std::string& type_str);
-}; 
+};
+
+} // namespace montecarlo 

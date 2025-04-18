@@ -1,5 +1,7 @@
 #pragma once
 
+namespace montecarlo {
+
 /**
  * @brief Enumeration of option types
  * 
@@ -9,4 +11,6 @@
 enum class OptionType {
     Call,   ///< Call option
     Put     ///< Put option
-}; 
+};
+
+} // namespace montecarlo 

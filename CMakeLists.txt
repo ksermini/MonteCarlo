@@ -10,52 +10,49 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Add nlohmann/json library
+# Add include directories
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party)
+
+# Find required packages
+find_package(Threads REQUIRED)
+
+# Add CLI11
 include(FetchContent)
 FetchContent_Declare(
-    json
-    URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz
-    URL_HASH MD5=6bea5877b1541d353bd77bdfbbdb1dcf
+    CLI11
+    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+    GIT_TAG v2.4.1
 )
-FetchContent_MakeAvailable(json)
-
-# Add CLI11 library for command-line parsing
-find_package(CLI11 REQUIRED)
-
-# Add Catch2 for testing
-find_package(Catch2 REQUIRED)
-
-# Add spdlog for logging
-find_package(spdlog REQUIRED)
+FetchContent_MakeAvailable(CLI11)
 
 # Add executable
 add_executable(MonteCarloOptionPricing
     src/main.cpp
-    src/ConfigLoader.cpp
+    src/Config.cpp
     src/BlackScholesModel.cpp
     src/OptionPricer.cpp
+    src/Logger.cpp
 )
 
 # Include directories
 target_include_directories(MonteCarloOptionPricing PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CLI11_SOURCE_DIR}/include
 )
 
 # Link libraries
 target_link_libraries(MonteCarloOptionPricing PRIVATE 
     Threads::Threads
-    nlohmann_json::nlohmann_json
     CLI11::CLI11
-    spdlog::spdlog
 )
 
 # Add tests
 enable_testing()
 add_executable(MonteCarloOptionPricingTests
-    tests/main.cpp
     tests/ConfigLoaderTests.cpp
-    tests/BlackScholesModelTests.cpp
-    tests/OptionPricerTests.cpp
+    src/Config.cpp
+    src/Logger.cpp
 )
 
 target_include_directories(MonteCarloOptionPricingTests PRIVATE 
@@ -63,9 +60,7 @@ target_include_directories(MonteCarloOptionPricingTests PRIVATE
 )
 
 target_link_libraries(MonteCarloOptionPricingTests PRIVATE
-    Catch2::Catch2WithMain
-    nlohmann_json::nlohmann_json
-    spdlog::spdlog
+    Threads::Threads
 )
 
 # Install targets
