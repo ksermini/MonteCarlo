@@ -22,19 +22,54 @@ int main(int argc, char* argv[]) {
         app.add_option("-c,--config", config_file, "Path to configuration file")
             ->check(CLI::ExistingFile);
 
-        // Override options
-        double S = 0.0, K = 0.0, r = 0.0, sigma = 0.0, T = 0.0;
-        unsigned int num_simulations = 0, num_threads = 0;
-        std::string option_type_str;
+        // Simulation parameters
+        unsigned int num_simulations = 0;
+        unsigned int num_threads = 0;
+        app.add_option("--simulations,-n", num_simulations, 
+            "Number of Monte Carlo simulations (overrides config)")
+            ->check(CLI::PositiveNumber);
+        app.add_option("--threads,-t", num_threads, 
+            "Number of threads for parallel computation (overrides config)")
+            ->check(CLI::PositiveNumber);
 
-        app.add_option("--initial-price", S, "Initial stock price");
-        app.add_option("--strike-price", K, "Strike price");
-        app.add_option("--risk-free-rate", r, "Risk-free interest rate");
-        app.add_option("--volatility", sigma, "Volatility");
-        app.add_option("--time-to-maturity", T, "Time to maturity");
-        app.add_option("--num-simulations", num_simulations, "Number of Monte Carlo simulations");
-        app.add_option("--num-threads", num_threads, "Number of threads for parallel computation");
-        app.add_option("--option-type", option_type_str, "Option type (call/put)");
+        // Option parameters
+        std::string option_type_str;
+        double S = 0.0, K = 0.0, r = 0.0, sigma = 0.0, T = 0.0;
+        app.add_option("--type", option_type_str, 
+            "Option type (call/put) (overrides config)")
+            ->check(CLI::IsMember({"call", "put"}));
+        app.add_option("--spot,-S", S, 
+            "Initial stock price (overrides config)")
+            ->check(CLI::PositiveNumber);
+        app.add_option("--strike,-K", K, 
+            "Strike price (overrides config)")
+            ->check(CLI::PositiveNumber);
+        app.add_option("--rate,-r", r, 
+            "Risk-free interest rate (overrides config)")
+            ->check(CLI::NonNegativeNumber);
+        app.add_option("--volatility,-v", sigma, 
+            "Volatility (overrides config)")
+            ->check(CLI::PositiveNumber);
+        app.add_option("--maturity,-T", T, 
+            "Time to maturity in years (overrides config)")
+            ->check(CLI::PositiveNumber);
+
+        // Output parameters
+        int precision = -1;
+        bool show_timing = true;
+        app.add_option("--precision,-p", precision, 
+            "Number of decimal places in output (overrides config)")
+            ->check(CLI::NonNegativeNumber);
+        app.add_flag("--timing{true},--no-timing{false}", show_timing, 
+            "Show computation timing (overrides config)");
+
+        // Additional options
+        bool validate_config = false;
+        app.add_flag("--validate-config", validate_config, 
+            "Validate configuration file and exit");
+        bool dry_run = false;
+        app.add_flag("--dry-run", dry_run, 
+            "Perform a dry run without actual pricing");
 
         // Parse command line
         CLI11_PARSE(app, argc, argv);
@@ -45,15 +80,31 @@ int main(int argc, char* argv[]) {
         montecarlo::Logger::info("Configuration loaded successfully");
 
         // Override config values if provided via command line
+        if (num_simulations > 0) config.num_simulations = num_simulations;
+        if (num_threads > 0) config.num_threads = num_threads;
+        if (!option_type_str.empty()) {
+            config.option_type = montecarlo::Config::parse_option_type(option_type_str);
+        }
         if (S > 0.0) config.S = S;
         if (K > 0.0) config.K = K;
         if (r > 0.0) config.r = r;
         if (sigma > 0.0) config.sigma = sigma;
         if (T > 0.0) config.T = T;
-        if (num_simulations > 0) config.num_simulations = num_simulations;
-        if (num_threads > 0) config.num_threads = num_threads;
-        if (!option_type_str.empty()) {
-            config.option_type = montecarlo::Config::parse_option_type(option_type_str);
+        if (precision >= 0) config.precision = precision;
+        config.show_timing = show_timing;
+
+        // Validate config if requested
+        if (validate_config) {
+            montecarlo::Logger::info("Configuration validation successful");
+            montecarlo::Logger::shutdown();
+            return 0;
+        }
+
+        // Dry run if requested
+        if (dry_run) {
+            montecarlo::Logger::info("Dry run completed successfully");
+            montecarlo::Logger::shutdown();
+            return 0;
         }
 
         // Create model
@@ -89,7 +140,10 @@ int main(int argc, char* argv[]) {
         // Output results
         montecarlo::Logger::info("Option Price: " + std::to_string(result.price));
         montecarlo::Logger::info("Standard Error: " + std::to_string(result.standard_error));
-        montecarlo::Logger::info("Computation Time: " + std::to_string(result.computation_time.count()) + " ms");
+        if (config.show_timing) {
+            montecarlo::Logger::info("Computation Time: " + 
+                std::to_string(result.computation_time.count()) + " ms");
+        }
 
         // Cleanup
         montecarlo::Logger::shutdown();
