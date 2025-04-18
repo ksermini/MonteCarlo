@@ -8,6 +8,7 @@
 #include "CLI/CLI.hpp"
 #include "CallPayoff.h"
 #include "PutPayoff.h"
+#include "ResultExporter.h"
 
 int main(int argc, char* argv[]) {
     try {
@@ -57,11 +58,18 @@ int main(int argc, char* argv[]) {
         // Output parameters
         int precision = -1;
         bool show_timing = true;
+        std::string output_file;
+        std::string output_format = "text";
         app.add_option("--precision,-p", precision, 
             "Number of decimal places in output (overrides config)")
             ->check(CLI::NonNegativeNumber);
         app.add_flag("--timing{true},--no-timing{false}", show_timing, 
             "Show computation timing (overrides config)");
+        app.add_option("--output,-o", output_file, 
+            "Output file path (if not specified, results are printed to console)");
+        app.add_option("--format,-f", output_format, 
+            "Output format (text/csv/json)")
+            ->check(CLI::IsMember({"text", "csv", "json"}));
 
         // Additional options
         bool validate_config = false;
@@ -138,11 +146,24 @@ int main(int argc, char* argv[]) {
         auto result = pricer.price_option(*payoff, config.T);
 
         // Output results
-        montecarlo::Logger::info("Option Price: " + std::to_string(result.price));
-        montecarlo::Logger::info("Standard Error: " + std::to_string(result.standard_error));
-        if (config.show_timing) {
-            montecarlo::Logger::info("Computation Time: " + 
-                std::to_string(result.computation_time.count()) + " ms");
+        if (!output_file.empty()) {
+            montecarlo::Logger::info("Exporting results to " + output_file);
+            if (output_format == "csv") {
+                montecarlo::ResultExporter::export_to_csv(output_file, result, config);
+            } else if (output_format == "json") {
+                montecarlo::ResultExporter::export_to_json(output_file, result, config);
+            } else {
+                montecarlo::ResultExporter::export_to_text(output_file, result, config);
+            }
+            montecarlo::Logger::info("Results exported successfully");
+        } else {
+            // Print to console
+            montecarlo::Logger::info("Option Price: " + std::to_string(result.price));
+            montecarlo::Logger::info("Standard Error: " + std::to_string(result.standard_error));
+            if (config.show_timing) {
+                montecarlo::Logger::info("Computation Time: " + 
+                    std::to_string(result.computation_time.count()) + " ms");
+            }
         }
 
         // Cleanup
