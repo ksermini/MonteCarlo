@@ -14,34 +14,19 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 include(FetchContent)
 FetchContent_Declare(
     json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.11.2
+    URL https://github.com/nlohmann/json/releases/download/v3.11.2/json.tar.xz
+    URL_HASH MD5=6bea5877b1541d353bd77bdfbbdb1dcf
 )
 FetchContent_MakeAvailable(json)
 
 # Add CLI11 library for command-line parsing
-FetchContent_Declare(
-    CLI11
-    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
-    GIT_TAG v2.3.2
-)
-FetchContent_MakeAvailable(CLI11)
+find_package(CLI11 REQUIRED)
 
 # Add Catch2 for testing
-FetchContent_Declare(
-    Catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG v3.3.2
-)
-FetchContent_MakeAvailable(Catch2)
+find_package(Catch2 REQUIRED)
 
 # Add spdlog for logging
-FetchContent_Declare(
-    spdlog
-    GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG v1.11.0
-)
-FetchContent_MakeAvailable(spdlog)
+find_package(spdlog REQUIRED)
 
 # Add executable
 add_executable(MonteCarloOptionPricing

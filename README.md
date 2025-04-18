@@ -143,3 +143,6 @@ class NewModel : public IPricingModel {
 ## Author
 
 Kayla Sermini
+
+This repository is made available for reference only.
+You may view and clone the code, but redistribution or reuse is prohibited without explicit permission.
