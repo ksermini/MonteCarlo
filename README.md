@@ -10,12 +10,14 @@ A high-performance C++ implementation of a Monte Carlo simulation engine for pri
 - Thread-safe random number generation
 - Clean, extensible architecture
 - Performance-optimized implementation
+- JSON-based configuration system
 
 ## Prerequisites
 
 - C++17 compatible compiler (GCC 7+, Clang 5+, MSVC 2017+)
 - CMake 3.10 or higher
 - Threading support in your C++ standard library
+- Internet connection (for downloading nlohmann/json library)
 
 ## Building the Project
 
@@ -37,28 +39,56 @@ cmake ..
 cmake --build .
 ```
 
+## Configuration
+
+The project uses a JSON configuration file (`config.json`) to set simulation parameters. You can modify this file to change:
+
+- Simulation parameters (number of simulations, threads)
+- Option parameters (type, strike price, volatility, etc.)
+- Output settings (precision, timing display)
+
+Example configuration:
+```json
+{
+    "simulation": {
+        "num_simulations": 1000000,
+        "num_threads": "auto"
+    },
+    "option": {
+        "type": "Call",
+        "parameters": {
+            "S": 100.0,
+            "K": 100.0,
+            "r": 0.05,
+            "sigma": 0.2,
+            "T": 1.0
+        }
+    },
+    "output": {
+        "precision": 4,
+        "show_timing": true
+    }
+}
+```
+
 ## Running the Program
 
 After building, run the executable:
 ```bash
-./MonteCarloOptionPricing
+./MonteCarloOptionPricing [config_file]
 ```
 
-The program will run a Monte Carlo simulation with the following default parameters:
-- Initial stock price (S): 100.0
-- Strike price (K): 100.0
-- Risk-free rate (r): 0.05 (5%)
-- Volatility (σ): 0.2 (20%)
-- Time to maturity (T): 1.0 year
-- Number of simulations: 1,000,000
-- Number of threads: System's hardware concurrency
+If no configuration file is specified, it will use `config.json` by default.
 
 ## Project Structure
 
 ```
 MonteCarloOptionPricing/
 ├── CMakeLists.txt          # Build configuration
+├── config.json             # Default configuration
 ├── main.cpp                # Program entry point
+├── Config.h                # Configuration class header
+├── Config.cpp              # Configuration class implementation
 ├── IPricingModel.h         # Abstract pricing model interface
 ├── BlackScholesModel.h     # Black-Scholes model header
 ├── BlackScholesModel.cpp   # Black-Scholes model implementation
@@ -80,6 +110,9 @@ Main class coordinating the Monte Carlo simulation process:
 - Manages multithreading
 - Aggregates simulation results
 - Calculates final option prices
+
+### Config
+Configuration management class that loads and parses JSON settings.
 
 ### OptionType
 Type-safe enumeration for option types (Call/Put).
@@ -106,7 +139,6 @@ class NewModel : public IPricingModel {
     }
 };
 ```
-
 
 ## Author
 

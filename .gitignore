@@ -4,19 +4,21 @@ SDD.md
 # Build directories
 build/
 cmake-build-*/
+x64/
+Debug/
+Release/
 
 # IDE specific files
 .vs/
 .vscode/
-*.user
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
 *.suo
-*.ncb
-*.opendb
-*.opensdf
+*.user
+*.userosscache
 *.sdf
-*.cachefile
-*.VC.db
-*.VC.VC.opendb
 
 # Compiled Object files
 *.slo
@@ -33,6 +35,10 @@ cmake-build-*/
 *.dylib
 *.dll
 
+# Fortran module files
+*.mod
+*.smod
+
 # Compiled Static libraries
 *.lai
 *.la
@@ -42,4 +48,23 @@ cmake-build-*/
 # Executables
 *.exe
 *.out
-*.app 
+*.app
+
+# Configuration files
+config.json
+*.config
+*.ini
+*.cfg
+
+# Logs and databases
+*.log
+*.sqlite
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db 
