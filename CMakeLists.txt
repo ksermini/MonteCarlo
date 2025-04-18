@@ -26,6 +26,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(CLI11)
 
+# Set consistent runtime library for MSVC
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    add_compile_options(/MT$<$<CONFIG:Debug>:d>)
+endif()
+
 # Add executable
 add_executable(MonteCarloOptionPricing
     src/main.cpp
@@ -44,7 +50,6 @@ target_include_directories(MonteCarloOptionPricing PRIVATE
 # Link libraries
 target_link_libraries(MonteCarloOptionPricing PRIVATE 
     Threads::Threads
-    CLI11::CLI11
 )
 
 # Add tests

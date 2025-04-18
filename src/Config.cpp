@@ -16,27 +16,20 @@ Config Config::load(const std::string& filename) {
     file >> j;
 
     // Load simulation parameters
-    config.num_simulations = j["simulation"]["num_simulations"].get<unsigned int>();
-    
-    // Handle num_threads which can be either a number or "auto"
-    if (j["simulation"]["num_threads"].is_string() && 
-        j["simulation"]["num_threads"].get<std::string>() == "auto") {
-        config.num_threads = std::thread::hardware_concurrency();
-    } else {
-        config.num_threads = j["simulation"]["num_threads"].get<unsigned int>();
-    }
+    config.num_simulations = j["num_simulations"].get<unsigned int>();
+    config.num_threads = j["num_threads"].get<unsigned int>();
 
     // Load option parameters
-    config.option_type = parse_option_type(j["option"]["type"].get<std::string>());
-    config.S = j["option"]["parameters"]["S"].get<double>();
-    config.K = j["option"]["parameters"]["K"].get<double>();
-    config.r = j["option"]["parameters"]["r"].get<double>();
-    config.sigma = j["option"]["parameters"]["sigma"].get<double>();
-    config.T = j["option"]["parameters"]["T"].get<double>();
+    config.option_type = parse_option_type(j["option_type"].get<std::string>());
+    config.S = j["S"].get<double>();
+    config.K = j["K"].get<double>();
+    config.r = j["r"].get<double>();
+    config.sigma = j["sigma"].get<double>();
+    config.T = j["T"].get<double>();
 
     // Load output parameters
-    config.precision = j["output"]["precision"].get<int>();
-    config.show_timing = j["output"]["show_timing"].get<bool>();
+    config.precision = j["precision"].get<int>();
+    config.show_timing = j["show_timing"].get<bool>();
 
     return config;
 }
