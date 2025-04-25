@@ -1,0 +1,25 @@
+{
+    "metadata": {
+        "precision": 6,
+        "timestamp": "Fri Apr 25 09:21:03 2025\n"
+    },
+    "option": {
+        "parameters": {
+            "K": 100.0,
+            "S": 100.0,
+            "T": 1.0,
+            "r": 0.05,
+            "sigma": 0.2
+        },
+        "type": "call"
+    },
+    "results": {
+        "computation_time_ms": 115,
+        "price": 10.467548008358461,
+        "standard_error": 0.015515136521582814
+    },
+    "simulation": {
+        "num_simulations": 1000000,
+        "num_threads": 4
+    }
+}
